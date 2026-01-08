@@ -1,0 +1,58 @@
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: api
+        restart: unless-stopped
+        working_dir: /var/www
+        volumes:
+            - ./:/var/www
+        networks:
+            - app-network
+        depends_on:
+            - db
+
+    nginx:
+        image: nginx:alpine
+        container_name: nginx
+        restart: unless-stopped
+        ports:
+            - "8080:80"
+        volumes:
+            - ./:/var/www
+            - ./docker/nginx:/etc/nginx/conf.d
+        networks:
+            - app-network
+        depends_on:
+            - app
+
+    db:
+        image: postgres:18.1
+        container_name: db
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: saas
+            POSTGRES_USER: saas
+            POSTGRES_PASSWORD: 102040
+        ports:
+            - "5432:5432"
+        volumes:
+            - ./.volumes/.postgresql:/var/lib/postgresql
+        networks:
+            - app-network
+
+    adminer:
+        image: adminer
+        container_name: adminer
+        restart: unless-stopped
+        ports:
+            - "8081:8080"
+        networks:
+            - app-network
+        depends_on:
+            - db
+
+networks:
+    app-network:
+        driver: bridge
